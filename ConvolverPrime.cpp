@@ -466,14 +466,13 @@ void ConvolverThread::writeResults(double* res1, double* res2) {
 			else return (ConvolverPrime::accWritesR);
 	});
 
-	// TODO: Test with "due" variable.
 	int interval = pow(2, index);
 	int convolveLoopInd;
 	if (c == 0)
 		convolveLoopInd = ConvolverPrime::convolveLoopIndL;
 	else
 		convolveLoopInd = ConvolverPrime::convolveLoopIndR;
-	if ((convolveLoopInd + 1) % interval != interval - 1) {
+	if (!due) {
 		// This thread is done early, before it is due to be written, and must wait
 		acceptingWrites->wait(l, [interval, c]() {
 			if (c== 0) return (ConvolverPrime::convolveLoopIndL + 1) % interval == interval - 1; 
