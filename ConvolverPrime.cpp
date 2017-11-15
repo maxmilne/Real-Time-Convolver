@@ -1,5 +1,5 @@
 #include "ConvolverPrime.h"
-#include "fftsg_h.c"
+#include "./libs/fftsg_h.c"
 #include <cmath>
 #include <iostream>
 #include <thread>
