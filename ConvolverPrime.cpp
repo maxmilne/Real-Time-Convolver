@@ -6,6 +6,9 @@
 #include <math.h>
 #include <Windows.h>
 
+// Audio input buffer size. Must be a power of 2.
+#define BUFFERSIZE		256
+
 // Shared data ////
 double* ConvolverPrime::inputHistory;
 int ConvolverPrime::ihCircInd;
@@ -26,6 +29,7 @@ std::thread* ConvolverPrime::stdThreadsR;
 int ConvolverPrime::numThreads;
 
 double* ConvolverPrime::inputBuffer;
+double* ConvolverPrime::outp;
 
 bool ConvolverPrime::amStartupL;
 bool ConvolverPrime::amStartupR;
@@ -127,14 +131,14 @@ double* ConvolverPrime::longConvolve(double* inputBuffer, int channel) {
 
 	// Starting new convolutional loop
 	if (channel == 0) {
-		int dest = (ihCircInd - 64) % filterBlocksTotalLength;
+		int dest = (ihCircInd - BUFFERSIZE) % filterBlocksTotalLength;
 		if (dest < 0) dest += filterBlocksTotalLength;
-		memcpy(&inputHistory[dest], inputBuffer, 64 * sizeof(double));
+		memcpy(&inputHistory[dest], inputBuffer, BUFFERSIZE * sizeof(double));
 	}
 
 	if (*amStartup)
 	{
-		if ((*convolveLoopInd & (*convolveLoopInd + 1)) == 0 && *startupNum <= 8) {
+		if ((*convolveLoopInd & (*convolveLoopInd + 1)) == 0 && *startupNum <= numThreads-1) {
 			// It's time to spawn a new thread (power of two time slice)
 			int threadIndex = (int)log2(*convolveLoopInd + 1);
 			//std::thread t(&ConvolverThread::run, threads[threadIndex]);
@@ -192,8 +196,7 @@ double* ConvolverPrime::longConvolve(double* inputBuffer, int channel) {
 		}
 	}
 
-	double * outp = new double[64];
-	for (int i = 0; i < 64; i++) {
+	for (int i = 0; i < BUFFERSIZE; i++) {
 		outp[i] = outputBuffer[*obCircInd + i];
 	}
 	return outp;
@@ -226,7 +229,7 @@ void ConvolverPrime::complexMultiplyAndInv(double* in1, double* in2, int length,
 	}
 }
 
-// Shifts buffer left by 64 (end becomes zero padded)
+// Shifts buffer left by BUFFERSIZE (end becomes zero padded)
 // ind == 0 => inputHistory. ind == 1 => outputBuffer
 void ConvolverPrime::shiftBuffer(double* buffer, int ind, int channel) {
 	int* obCircInd;
@@ -235,12 +238,12 @@ void ConvolverPrime::shiftBuffer(double* buffer, int ind, int channel) {
 	else
 		obCircInd = &obCircIndR;
 	if (ind == 0) {
-		memset(&buffer[ihCircInd % filterBlocksTotalLength], 0, sizeof(double) * 64);
-		ihCircInd = (ihCircInd + 64) % filterBlocksTotalLength;
+		memset(&buffer[ihCircInd % filterBlocksTotalLength], 0, sizeof(double) * BUFFERSIZE);
+		ihCircInd = (ihCircInd + BUFFERSIZE) % filterBlocksTotalLength;
 	}
 	else {
-		memset(&buffer[*obCircInd % filterBlocksTotalLength], 0, sizeof(double) * 64);
-		*obCircInd = (*obCircInd + 64) % filterBlocksTotalLength;
+		memset(&buffer[*obCircInd % filterBlocksTotalLength], 0, sizeof(double) * BUFFERSIZE);
+		*obCircInd = (*obCircInd + BUFFERSIZE) % filterBlocksTotalLength;
 	}
 }
 
@@ -252,11 +255,11 @@ void ConvolverPrime::splitBRIR(double** BRIR, int BRIRLength) {
 		// Not multiplied by 2 to account for zero padding yet,
 		// because the blocks will need to be doubled but this is only 
 		// for enumerating how many blocks we need first
-		sizeLowerBound += (64 * pow(2, i));
+		sizeLowerBound += (BUFFERSIZE * pow(2, i));
 		if (BRIRLength > sizeLowerBound) size++;
 		else break;
 
-		sizeLowerBound += (64 * pow(2, i));
+		sizeLowerBound += (BUFFERSIZE * pow(2, i));
 		if (BRIRLength > sizeLowerBound) size++;
 		else break;
 		i++;
@@ -265,11 +268,15 @@ void ConvolverPrime::splitBRIR(double** BRIR, int BRIRLength) {
 	numBlocks = size;
 	numThreads = numBlocks % 2 == 0 ? numBlocks / 2 : numBlocks / 2 + 1;
 
-	blocksL = new double*[size];
+	// If there are an odd number of blocks, pad with another block.
+	if (numBlocks % 2 == 1) 
+		blocksL = new double*[size+1];
+	else
+		blocksL = new double*[size];
 	int blockSize = 0;
 	int blockIndex = 0;
 	for (int i = 0; i < size; i++) {
-		blockSize = 64 * pow(2, (i / 2)) * 2;
+		blockSize = BUFFERSIZE * pow(2, (i / 2)) * 2;
 		blocksL[i] = new double[blockSize];
 		for (int j = 0; j < blockSize; j++) {
 			if (j < blockSize / 2 && blockIndex + j < BRIRLength) blocksL[i][j] = BRIR[0][blockIndex + j];
@@ -279,11 +286,15 @@ void ConvolverPrime::splitBRIR(double** BRIR, int BRIRLength) {
 		blockIndex += blockSize / 2;
 	}
 
-	blocksR = new double*[size];
+	// If there are an odd number of blocks, pad with another block.
+	if (numBlocks % 2 == 1)
+		blocksR = new double*[size + 1];
+	else
+		blocksR = new double*[size];
 	blockSize = 0;
 	blockIndex = 0;
 	for (int i = 0; i < size; i++) {
-		blockSize = 64 * pow(2, (i / 2)) * 2;
+		blockSize = BUFFERSIZE * pow(2, (i / 2)) * 2;
 		blocksR[i] = new double[blockSize];
 		for (int j = 0; j < blockSize; j++) {
 			if (j < blockSize / 2 && blockIndex + j < BRIRLength) blocksR[i][j] = BRIR[0][blockIndex + j];
@@ -292,14 +303,26 @@ void ConvolverPrime::splitBRIR(double** BRIR, int BRIRLength) {
 		rdft(blockSize, 1, blocksR[i]);
 		blockIndex += blockSize / 2;
 	}
+
+	// If the filter was padded with a block to make it even, 
+	// zero out this final block so it has no effect on the output.
+	if (numBlocks % 2 == 1) {
+		blocksL[size] = new double[blockSize];
+		memset(blocksL[size], 0, blockSize * sizeof(double));
+
+		blocksR[size] = new double[blockSize];
+		memset(blocksR[size], 0, blockSize * sizeof(double));
+
+		numBlocks++;
+	}
 }
 
 // Initialize the convolver. BRIR assumed to be binaural.
-void ConvolverPrime::init(double** BRIR) {
-	splitBRIR(BRIR, 55125);
+void ConvolverPrime::init(double** BRIR, int length) {
+	splitBRIR(BRIR, length);
 	filterBlocksTotalLength = 0;
 	for (int i = 0; i < numBlocks; i++) {
-		filterBlocksTotalLength += 64 * pow(2, (i / 2));
+		filterBlocksTotalLength += BUFFERSIZE * pow(2, (i / 2));
 	}
 	inputHistory = new double[filterBlocksTotalLength];
 	for (int i = 0; i < filterBlocksTotalLength; i++) {
@@ -314,8 +337,8 @@ void ConvolverPrime::init(double** BRIR) {
 	for (int i = 0; i < filterBlocksTotalLength; i++) {
 		outputBufferR[i] = 0;
 	}
-	obCircIndL = filterBlocksTotalLength - 64;
-	obCircIndR = filterBlocksTotalLength - 64;
+	obCircIndL = filterBlocksTotalLength - BUFFERSIZE;
+	obCircIndR = filterBlocksTotalLength - BUFFERSIZE;
 	threadsL = new ConvolverThread[numThreads];
 	for (int i = 0; i < numThreads; i++) {
 		threadsL[i] = *(new ConvolverThread(i, 0));
@@ -332,6 +355,10 @@ void ConvolverPrime::init(double** BRIR) {
 	for (int i = 0; i < numThreads; i++) {
 		stdThreadsR[i] = std::thread();
 	}
+	outp = new double[BUFFERSIZE];
+	for (int i = 0; i < BUFFERSIZE; i++) {
+		outp[i] = 0;
+	}
 
 	amStartupL = true;
 	amStartupR = true;
@@ -339,7 +366,7 @@ void ConvolverPrime::init(double** BRIR) {
 	startupNumR = 0;
 	convolveLoopIndL = -1;
 	convolveLoopIndR = -1;
-	convolveLoopLength = filterBlocksTotalLength / 64;
+	convolveLoopLength = filterBlocksTotalLength / BUFFERSIZE;
 	readersDoneL = false;
 	readersDoneR = false;
 	writersDoneL = false;
@@ -367,14 +394,8 @@ ConvolverThread::ConvolverThread(int threadIndex, int chan)
 
 	// We don't multiply by two here because we just mean the block size
 	// without the padding
-	blockSize = 64 * pow(2, (index));
+	blockSize = BUFFERSIZE * pow(2, (index));
 	if (index == ConvolverPrime::numBlocks - 1 && ConvolverPrime::numBlocks % 2 == 1) hasOnlyOneBlock = true;
-
-	// TODO: ADD IFONLYONEBLOCK LOGIC
-	//filterBlock1 = new double[blockSize * 2];
-	//filterBlock2 = new double[blockSize * 2];
-	//memcpy(filterBlock1, ConvolverPrime::blocksR[2 * index], blockSize * 2 * sizeof(double));
-	//memcpy(filterBlock2, ConvolverPrime::blocksR[2 * index + 1], blockSize * 2 * sizeof(double));
 
 	if (channel == 0) {
 		mut = &ConvolverPrime::mutL;
@@ -530,7 +551,6 @@ void ConvolverThread::run() {
 		readStaticData();
 
 		// Starting actual convolution
-
 
 		rdft(blockSize * 2, 1, inputBlock);
 

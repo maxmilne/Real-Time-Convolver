@@ -1,3 +1,9 @@
+//-----------------------------------------------------------
+// Handles multithreaded audio convolution logic.
+// Algorithm based on William Gardner's 1995 paper:
+// http://www.cs.ust.hk/mjg_lib/bibs/DPSu/DPSu.Files/Ga95.PDF
+//-----------------------------------------------------------
+
 #pragma once
 #include <mutex>
 
@@ -86,6 +92,7 @@ public:
 	static int numThreads;
 
 	static double* inputBuffer;
+	static double* outp;
 
 	// Is the convolver still in the phase of loading in new threads into the system?
 	static bool amStartupL;
@@ -131,7 +138,7 @@ public:
 	static void complexMultiplyAndInv(double* in1, double* in2, int length, double*& out);
 	static void shiftBuffer(double* buffer, int ind, int channel);
 	static void splitBRIR(double** BRIR, int BRIRLength);
-	static void init(double** BRIR);
+	static void init(double** BRIR, int length);
 
 };
 
