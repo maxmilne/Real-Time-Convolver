@@ -3,7 +3,7 @@ A real-time, multithreaded BRIR (binaural room impulse response) convolver, made
 
 Use:
 
-Build on Visual Studio by first including the libs folder as a header directory. The build also requires linking with PortAudio (http://www.portaudio.com/) for compatibility with the demo option for using your computer's default speaker and microphone instead of an Oculus Rift. The .dll and .lib files are provided along with the license information.
+Build on Visual Studio by first including the libs folder as a header directory. The build also requires linking with PortAudio (http://www.portaudio.com/) for compatibility with the demo option for using your computer's default speaker and microphone instead of an Oculus Rift. The .dll and .lib files are provided along with the license information. This program only supports x64 machines.
 
 BRIR file loading is currently hard coded. To change, replace the provided "brirs\\empty_apartment_bedroom_06.wav" in the LoadBRIR::load() function with the path to the BRIR wav file. 
 
