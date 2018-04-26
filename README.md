@@ -1,5 +1,5 @@
 # Real-Time-Convolver
-A real-time, multithreaded BRIR (binaural room impulse response) convolver, made for use with VR microphones. Currently only supports the Oculus Rift on Windows. 
+A real-time, multithreaded BRIR (binaural room impulse response) convolver, made for use with VR microphones. Currently only supports the Oculus Rift on Windows. This algorithm was adapted from the one described in William Gardner's 1995 paper, "Efficient Convolution without Input/Output Delay."
 
 Use:
 
