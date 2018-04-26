@@ -1,4 +1,4 @@
-#include "AudioportWrapper.h"
+#include "PortAudioWrapper.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include "portaudio.h"
@@ -88,7 +88,7 @@ void StartAudioLoopback() {
 	Pa_Sleep(100000);
 }
 
-int AudioportWrapper::start()
+int PortAudioWrapper::start()
 {
 	int *numSamples = new int();
 	double** BRIR = LoadBRIR::load(numSamples);

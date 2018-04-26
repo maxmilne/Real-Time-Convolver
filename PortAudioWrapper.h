@@ -1,6 +1,6 @@
 #pragma once
 
-class AudioportWrapper {
+class PortAudioWrapper {
 public:
 	static int start();
 };

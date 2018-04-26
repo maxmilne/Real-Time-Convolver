@@ -25,7 +25,7 @@
 #include "LoadBRIR.h"
 #include <thread>
 #include <iostream>
-#include "AudioportWrapper.h"
+#include "PortAudioWrapper.h"
 
 #pragma comment(lib, "Avrt.lib")
 #pragma comment(lib, "Dwmapi.lib")
@@ -73,7 +73,7 @@ HRESULT convolveVoice()
 		if (key == 's')
 			break;
 		else if (key == 'o')
-			AudioportWrapper::start();
+			PortAudioWrapper::start();
 	}
 
 	HRESULT hr;
