@@ -19,9 +19,16 @@ double* PCMFunctions::byteToDouble(BYTE* buff) {
 	return outStatic;
 }
 
+double* PCMFunctions::floatToDouble(float* buff) {
+	for (int i = 0; i < buffSizeStatic; i++) {
+		outStatic[i] = (double)buff[i];
+	}
+	return outStatic;
+}
+
 BYTE* PCMFunctions::doubleToByte(double* buff) {
 	for (int i = 0; i < buffSizeStatic; i++) {
-		conversionArrayStatic[i] = buff[i] * 2.0;
+		conversionArrayStatic[i] = buff[i] * 1.0;
 		conversionArray2Static[i] = (WORD)((short)(conversionArrayStatic[i] * 32768.0f));
 	}
 	return (BYTE*)conversionArray2Static;

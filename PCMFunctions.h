@@ -22,6 +22,7 @@ public:
 
 	static void init(int buffSize);
 	static double* byteToDouble(BYTE* buff);
+	static double* floatToDouble(float* buff);
 	static BYTE* doubleToByte(double* buff);
 
 };

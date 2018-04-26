@@ -25,6 +25,7 @@
 #include "LoadBRIR.h"
 #include <thread>
 #include <iostream>
+#include "AudioportWrapper.h"
 
 #pragma comment(lib, "Avrt.lib")
 #pragma comment(lib, "Dwmapi.lib")
@@ -55,6 +56,26 @@ static LARGE_INTEGER Frequency;
 
 HRESULT convolveVoice()
 {
+	printf("This is a demo for the real time convolution system.\n"
+		"This system was optimized for low latency with the Oculus Rift VR headset via the WASAPI.\n"
+		"If you have an Oculus Rift installed, press 's' and enter to begin the convolution demo.\n"
+		"Otherwise, press 'o' and enter to begin the convolution demo with this computer's\n"
+		"default speaker and microphone. Please use headphones to prevent feedback.\n\n"
+		"NOTE: If you are using your computer's default speaker and microphone,\n"
+		"the latency will be higher, as will the potential for audio glitches.\n\n");
+	//// Keyboard prep.
+	DWORD        mode;
+	INPUT_RECORD event;
+
+	char key;
+	while (true) {
+		std::cin >> key;
+		if (key == 's')
+			break;
+		else if (key == 'o')
+			AudioportWrapper::start();
+	}
+
 	HRESULT hr;
 	REFERENCE_TIME hnsActualDuration;
 	IMMDeviceEnumerator *pEnumerator = NULL;
@@ -312,11 +333,6 @@ HRESULT convolveVoice()
 		pData[i] = 0;
 	}
 
-
-	//// Keyboard prep.
-	DWORD        mode;
-	INPUT_RECORD event;
-
 	lpHandles[2] = GetStdHandle(STD_INPUT_HANDLE);
 	GetConsoleMode(lpHandles[2], &mode);
 	SetConsoleMode(lpHandles[2], 0);
@@ -332,22 +348,10 @@ HRESULT convolveVoice()
 	hr = pRenderClient->ReleaseBuffer(bufferFrameCountR, flags);
 	EXIT_ON_ERROR(hr)
 
-	printf("Press 's' to start.\n");
-	char key;
-	while (true) {
-	std::cin >> key;
-	if (key == 's')
-		break;
-	}
-
 	printf("Starting. Press 'q' to quit.\n");
 	hr = pAudioClientC->Start();  // Start playing.
 	EXIT_ON_ERROR(hr)
 
-	//QueryPerformanceFrequency(&FrequencyC);
-	//QueryPerformanceCounter(&StartingTimeC);
-	//QueryPerformanceFrequency(&FrequencyR);
-	//QueryPerformanceCounter(&StartingTimeR);
 	// Each loop fills one of the two buffers.
 	double* buffL;
 	double* buffR;

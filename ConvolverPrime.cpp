@@ -7,7 +7,7 @@
 #include <Windows.h>
 
 // Audio input buffer size. Must be a power of 2.
-#define BUFFERSIZE		256
+#define BUFFERSIZE		1024
 
 // Shared data ////
 double* ConvolverPrime::inputHistory;
@@ -168,8 +168,6 @@ double* ConvolverPrime::longConvolve(double* inputBuffer, int channel) {
 		}
 	}
 
-	//QueryPerformanceFrequency(&Frequency);
-	//QueryPerformanceCounter(&StartingTime);
 	/// WAITING ON THREADS
 	*accStarts = true;
 	*readersDone = false;
@@ -182,12 +180,6 @@ double* ConvolverPrime::longConvolve(double* inputBuffer, int channel) {
 	});
 	*accStarts = false;
 	*accWrites = false;
-	///
-	//QueryPerformanceCounter(&EndingTime);
-	//ElapsedMilliseconds.QuadPart = EndingTime.QuadPart - StartingTime.QuadPart;
-	//ElapsedMilliseconds.QuadPart *= 1000000;
-	//ElapsedMilliseconds.QuadPart /= Frequency.QuadPart;
-	//cout << ElapsedMilliseconds.QuadPart << "\n" << flush;
 
 	for (int i = 0; i < numThreads; i++) {
 		if (threads[i].due && i < *startupNum) {
