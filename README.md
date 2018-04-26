@@ -11,7 +11,7 @@ WASAPIInterface.cpp currently contains the logic for handling audio and interfac
 
 NOTE: Because of low latency constraints, the default Oculus Rift audio driver must be replaced in the device manager with the generic Windows USB audio driver.
 
-Press 's' and then enter to start convolution with an Oculus Rift if you have one installed, otherwise press 'o' and then enter to use your computer's default speaker and microphone. This will be higher latency due to using PortAudio instead of the low level WASAPI, and may contian more audio glitches for now.
+Press 's' and then enter to start convolution with an Oculus Rift if you have one installed, otherwise press 'o' and then enter to use your computer's default speaker and microphone. If doing the latter, make sure to use headphones to prevent feedback. This option will be higher latency due to using PortAudio instead of the low level WASAPI, and may contian more audio glitches for now.
 
 Known Issues:
 
