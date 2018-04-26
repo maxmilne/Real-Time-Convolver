@@ -3,11 +3,15 @@ A real-time, multithreaded BRIR (binaural room impulse response) convolver, made
 
 Use:
 
-Build on Visual Studio by simply including the libs folder as a header directory. BRIR file loading is currently hard coded. To change, replace "brir.wav" in the LoadBRIR::load() function with the path to the BRIR wav file. WASAPIInterface.cpp currently contains the logic for handling audio and interfacing with the convolution engine, but the engine is entirely indepdent of this implementation. The program builds as a command line interface which automatically detects the Oculus Rift and loads the BRIR file.
+Build on Visual Studio by first including the libs folder as a header directory. The build also requires linking with PortAudio (http://www.portaudio.com/) for compatibility with the demo option for using your computer's default speaker and microphone instead of an Oculus Rift.
+
+BRIR file loading is currently hard coded. To change, replace the provided "brirs\\empty_apartment_bedroom_06.wav" in the LoadBRIR::load() function with the path to the BRIR wav file. 
+
+WASAPIInterface.cpp currently contains the logic for handling audio and interfacing with the convolution engine, but the engine is entirely indepdent of this implementation. The program builds as a command line interface which automatically detects the Oculus Rift and loads the BRIR file.
 
 NOTE: Because of low latency constraints, the default Oculus Rift audio driver must be replaced in the device manager with the generic Windows USB audio driver.
 
-Press 's' to start and 'q' to quit the convolution demo.
+Press 's' and then enter to start convolution with an Oculus Rift if you have one installed, otherwise press 'o' and then enter to use your computer's default speaker and microphone. This will be higher latency due to using PortAudio instead of the low level WASAPI, and may contian more audio glitches for now.
 
 Known Issues:
 
